@@ -12,5 +12,8 @@
     "ws": "^8.16.0"
   },
   "author": "Antigravity",
-  "license": "ISC"
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
