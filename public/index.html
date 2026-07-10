@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Chat Support - Electronics Repair Shop</title>
+  <meta name="description" content="Enterprise grade monochromatic real-time chat support system for floor staff.">
+  <link rel="stylesheet" href="style.css">
+  <!-- Import google fonts (Outfit and Roboto Mono for telemetry) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header / Navigation Bar -->
+  <header class="app-header" role="banner">
+    <div class="header-logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+      </svg>
+      <h1>REPAIR<strong>SYNC</strong></h1>
+      <span class="sub-logo">Floor Staff Portal</span>
+    </div>
+
+    <!-- Connection & Network Simulation Panel -->
+    <div class="network-control-panel" role="region" aria-label="Network simulation panel">
+      <div class="ws-connection-indicator">
+        <span class="status-dot disconnected" id="connection-dot" aria-hidden="true"></span>
+        <span class="badge" id="ws-badge" aria-live="polite">DISCONNECTED</span>
+        <span class="ping-latency" id="ws-ping" aria-label="Connection Latency">-- ms</span>
+      </div>
+
+      <div class="simulation-selector" role="radiogroup" aria-label="Network connection simulation mode">
+        <span class="sim-label" id="sim-group-label">Simulate Link:</span>
+        
+        <label class="sim-option" for="sim-fast">
+          <input type="radio" id="sim-fast" name="network-speed" value="fast" checked aria-labelledby="sim-group-label sim-fast-label">
+          <span class="custom-radio"></span>
+          <span id="sim-fast-label">Fast (Online)</span>
+        </label>
+        
+        <label class="sim-option" for="sim-slow">
+          <input type="radio" id="sim-slow" name="network-speed" value="slow" aria-labelledby="sim-group-label sim-slow-label">
+          <span class="custom-radio"></span>
+          <span id="sim-slow-label">Slow 3G</span>
+        </label>
+        
+        <label class="sim-option" for="sim-offline">
+          <input type="radio" id="sim-offline" name="network-speed" value="offline" aria-labelledby="sim-group-label sim-offline-label">
+          <span class="custom-radio"></span>
+          <span id="sim-offline-label">Offline</span>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Network Interruption Banner (shown when disconnected or simulated offline) -->
+  <div id="connection-banner" class="offline-banner hidden" role="alert" aria-live="assertive">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"></path>
+    </svg>
+    <span>Connection lost. Messages will be queued and sent automatically when back online.</span>
+  </div>
+
+  <!-- Main Portal Layout -->
+  <main class="app-container" role="main">
+    
+    <!-- Column 1: Sidebar - Active Repair Chats & Search -->
+    <aside class="sidebar" aria-label="Active Repair Chats">
+      <div class="sidebar-header">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="search" id="chat-search" placeholder="Search active repair tickets..." aria-label="Search active repair tickets">
+        </div>
+        <button id="open-new-ticket-btn" class="btn btn-primary" aria-haspopup="dialog" aria-controls="new-ticket-modal" aria-label="Create a new repair ticket and chat session">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Ticket</span>
+        </button>
+      </div>
+
+      <!-- Chats List -->
+      <nav class="chats-nav" aria-label="Repair Tickets List">
+        <!-- Skeleton Loaders (Simulating latency upon start) -->
+        <div id="chats-skeleton" class="skeleton-list">
+          <div class="skeleton-item"></div>
+          <div class="skeleton-item"></div>
+          <div class="skeleton-item"></div>
+        </div>
+
+        <ul id="chats-list" role="listbox" aria-label="Open repair tickets" class="hidden">
+          <!-- Populated dynamically via JS -->
+        </ul>
+
+        <!-- Empty State UI -->
+        <div id="chats-empty-state" class="empty-state hidden" aria-live="polite">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <h3>No tickets found</h3>
+          <p>Try searching for a different customer name or device model.</p>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Column 2: Center - Chat Console -->
+    <section class="chat-panel" aria-label="Repair Live Chat Stream">
+      
+      <!-- Chat Header -->
+      <div class="chat-header" id="active-chat-header">
+        <div class="chat-title-info">
+          <h2 id="active-device-name" class="active-title">Select a chat to begin</h2>
+          <span id="active-ticket-id" class="active-subtitle"></span>
+        </div>
+        <div class="chat-header-actions hidden" id="chat-header-actions">
+          <label for="active-status-select" class="sr-only">Update ticket repair status</label>
+          <select id="active-status-select" aria-label="Update ticket repair status">
+            <option value="New">New</option>
+            <option value="Diagnostics">Diagnostics</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Awaiting Parts">Awaiting Parts</option>
+            <option value="Ready for Pickup">Ready for Pickup</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Chat Message Log -->
+      <div class="chat-messages-container" id="messages-container">
+        <!-- Static Welcome Screen -->
+        <div id="welcome-chat-screen" class="welcome-screen">
+          <div class="welcome-branding">
+            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <h2>Electronics Repair Chat</h2>
+            <p>Select a client ticket from the left panel to begin managing support communications in real-time.</p>
+          </div>
+        </div>
+
+        <!-- Scrollable Log -->
+        <div id="chat-messages-log" class="chat-messages-log hidden" role="log" aria-live="polite">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Asynchronous Operation Spinner Overlay -->
+        <div id="async-spinner" class="async-spinner hidden" aria-live="polite">
+          <div class="spinner" role="status"><span class="sr-only">Loading message stream...</span></div>
+        </div>
+      </div>
+
+      <!-- Chat Composition / Input Bar -->
+      <div class="chat-input-area hidden" id="chat-input-panel">
+        <form id="chat-input-form" class="chat-input-form" novalidate>
+          <div class="input-wrapper">
+            <textarea id="chat-textarea" placeholder="Type a message to customer... (Press Enter to send)" required aria-required="true" aria-label="Message text to customer"></textarea>
+            <div id="input-validation-msg" class="validation-message" aria-live="polite"></div>
+          </div>
+          <button type="submit" id="chat-send-btn" class="btn btn-accent btn-send" aria-label="Send message to customer">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            <span>Send</span>
+          </button>
+        </form>
+        <div class="input-hints">
+          <span>Press <strong>Enter</strong> to send. <strong>Shift + Enter</strong> for line break.</span>
+          <span id="char-counter">0 / 500 characters</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Column 3: Right Side - Customer Details, Checklists, & Telemetry Console -->
+    <aside class="detail-panel" aria-label="Ticket Context & Telemetry Dashboard">
+      <!-- Tabs or Sections -->
+      <section class="detail-section" id="context-info-section" aria-label="Customer Info & Diagnostics">
+        <div class="panel-card empty-context" id="no-context-card">
+          <p>No active ticket selected. Select a ticket to display hardware diagnostic diagnostics & customer metadata.</p>
+        </div>
+
+        <div class="panel-card hidden" id="context-card">
+          <h3 class="panel-title">Customer Metadata</h3>
+          <div class="metadata-grid">
+            <span class="meta-label">Customer:</span>
+            <span class="meta-value" id="meta-customer-name">Sarah Jenkins</span>
+            
+            <span class="meta-label">Job Number:</span>
+            <span class="meta-value code-font" id="meta-ticket-id">ENG-8021</span>
+            
+            <span class="meta-label">Created:</span>
+            <span class="meta-value" id="meta-created-date">10 July 2026</span>
+          </div>
+
+          <hr class="panel-divider">
+
+          <h3 class="panel-title">Floor Diagnostics Checklist</h3>
+          <ul class="checklist" id="diagnostics-checklist">
+            <li>
+              <label class="checklist-item">
+                <input type="checkbox" checked disabled>
+                <span>Initial Intake Diagnostic Report</span>
+              </label>
+            </li>
+            <li>
+              <label class="checklist-item">
+                <input type="checkbox" id="chk-voltage">
+                <span>Power IC Voltage Testing</span>
+              </label>
+            </li>
+            <li>
+              <label class="checklist-item">
+                <input type="checkbox" id="chk-solder">
+                <span>Micro-soldering Repair Inspection</span>
+              </label>
+            </li>
+            <li>
+              <label class="checklist-item">
+                <input type="checkbox" id="chk-burnin">
+                <span>4-Hour Display Burn-In Test</span>
+              </label>
+            </li>
+          </ul>
+
+          <hr class="panel-divider">
+
+          <h3 class="panel-title">Floor Canned Templates</h3>
+          <div class="templates-container">
+            <button class="btn btn-secondary btn-template" data-text="Your electronics diagnostic is now complete. We have identified a hardware fault and will proceed with the screen assembly replacement. Cost is estimated at $129. Do we have your authorization to proceed?">
+              Request Authorization
+            </button>
+            <button class="btn btn-secondary btn-template" data-text="Good news! The repair of your device is fully complete. We ran voltage tests and quality inspections, and everything passes. Your device is ready for pickup during our standard business hours.">
+              Ready for Pickup
+            </button>
+            <button class="btn btn-secondary btn-template" data-text="We are currently awaiting replacement parts for your device from our vendor. The estimated arrival time is 2-3 business days. We will notify you as soon as they arrive and repairs resume.">
+              Awaiting Parts
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Telemetry Live Logging Terminal -->
+      <section class="telemetry-section" aria-label="Simulated Corporate Telemetry Terminal">
+        <div class="telemetry-header">
+          <h3>Simulated Telemetry Feed</h3>
+          <button id="clear-telemetry-btn" class="btn-clear" aria-label="Clear telemetry feed log">Clear</button>
+        </div>
+        <div class="telemetry-terminal">
+          <div class="terminal-body" id="telemetry-logs" role="log" aria-live="polite">
+            <div class="log-entry system">[System] Telemetry initialized. Ready for user actions.</div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+  </main>
+
+  <!-- Modal: Create New Ticket & Chat Session -->
+  <div id="new-ticket-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Create Repair Ticket & Chat</h2>
+        <button id="close-modal-btn" class="btn-close" aria-label="Close dialog modal">&times;</button>
+      </div>
+      <form id="new-ticket-form" novalidate>
+        <div class="form-group">
+          <label for="form-customer-name">Customer Full Name <span class="required">*</span></label>
+          <input type="text" id="form-customer-name" name="customerName" required placeholder="e.g. John Doe">
+          <span class="form-error-msg" id="err-customer-name" aria-live="polite"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="form-device-model">Device Model <span class="required">*</span></label>
+          <input type="text" id="form-device-model" name="deviceModel" required placeholder="e.g. iPhone 14 Pro Max, Dell XPS 15">
+          <span class="form-error-msg" id="err-device-model" aria-live="polite"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="form-issue-desc">Intake Issue Description <span class="required">*</span></label>
+          <textarea id="form-issue-desc" name="issueDescription" required placeholder="Outline hardware errors, visible defects, or fluid entry details..." rows="3"></textarea>
+          <span class="form-error-msg" id="err-issue-desc" aria-live="polite"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="form-priority">Repair Ticket Priority <span class="required">*</span></label>
+          <select id="form-priority" name="priority" required>
+            <option value="">-- Choose Priority --</option>
+            <option value="P1">P1 (Immediate Critical)</option>
+            <option value="P2">P2 (Standard Active)</option>
+            <option value="P3">P3 (Routine Queue)</option>
+          </select>
+          <span class="form-error-msg" id="err-priority" aria-live="polite"></span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="form-cancel-btn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-accent">Create Ticket & Start Chat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

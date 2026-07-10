@@ -1,0 +1,16 @@
+{
+  "name": "electronics-repair-chat-support",
+  "version": "1.0.0",
+  "description": "Real-time chat support system for Electronics Repair Shop floor staff.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.16.0"
+  },
+  "author": "Antigravity",
+  "license": "ISC"
+}
